@@ -2,27 +2,68 @@ from keras.layers import Dense, Dropout, LSTM, Embedding
 from keras.preprocessing.sequence import pad_sequences
 from keras.models import Sequential
 import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-# define contrived series
+from sklearn.preprocessing import minmax_scale
 import numpy as np
 import tensorflow as tf
-from keras.optimizers import RMSprop
-from keras.optimizers import Adam
 from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
+import matplotlib.pyplot as plt
+df=pd.read_csv("/content/data.csv")
 
+datalist = df.values
+inputs = datalist[:, :-1]
+output = datalist[:, -1]
+le = preprocessing.LabelEncoder()
+output=le.fit_transform(output)
+Train_inputs, Test_inputs, train_output, test_output = train_test_split(inputs, output, test_size=0.30, shuffle=True, random_state=1)
+
+std_scale = preprocessing.StandardScaler().fit(Train_inputs)
+train_inputs = std_scale.transform(Train_inputs)
+test_inputs = std_scale.transform(Test_inputs)
+
+ts=train_inputs.shape
+tss=test_inputs.shape
+
+train_inputs_tf = train_inputs.reshape(ts[0],1,ts[1])
+test_inputs_tf = test_inputs.reshape(tss[0],1,tss[1])
+train_output_tf = train_output.reshape(ts[0],1,1)
+test_output_tf = test_output.reshape(tss[0],1,1)
 model = Sequential()
-model.add(LSTM(256,return_sequences=True))
-model.add(Dropout(0.2))
-model.add(LSTM(128,return_sequences=True))
-model.add(Dropout(0.2))
-model.add(LSTM(64,return_sequences=True))
-model.add(Dropout(0.2))
-model.add(LSTM(32,return_sequences=True))
-model.add(Dropout(0.2))
-model.add(Dense(4, activation='softmax'))
-# op = RMSprop(learning_rate=0.00001)
-# op = Adam(learning_rate=0.0005)
-model.compile(loss='sparse_categorical_crossentropy', optimizer='RMSprop',metrics=['accuracy'])
-history=model.fit(train_inputs_tf, train_output_tf, epochs=1000, batch_size=256,verbose=1,validation_data=(test_inputs_tf, test_output_tf))
+model.add(LSTM(256,return_sequences=True,implementation=2))
+model.add(Dropout(0.5))
+model.add(LSTM(128,return_sequences=True,implementation=2))
+model.add(Dropout(0.5))
+model.add(LSTM(64,return_sequences=True,implementation=2))
+model.add(Dropout(0.5))
+model.add(LSTM(32,return_sequences=True,implementation=2))
+model.add(Dropout(0.5))
+model.add(Dense(1, activation='sigmoid'))
+model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+history = model.fit(train_inputs_tf, train_output_tf, epochs=100, batch_size=128,verbose=1)
+scores = model.predict_classes(test_inputs_tf)
+# history = model.fit(train_inputs_tf, train_output_tf, epochs=10, batch_size=128,verbose=1,validation_data=(test_inputs_tf, test_output_tf))
 model.summary()
+tst=[]
+prdt=[]
+l=len(scores)
+for k in range(l):
+  t=test_output_tf[k][0]
+  tst.append(t[0])
+  pt=scores[k][0]
+  prdt.append(pt[0])
+
+import tensorflow as tf 
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+
+accuracy = accuracy_score(tst,prdt)
+print("Accuracy: %f" % accuracy)
+precision = precision_score(tst,prdt)
+print("Precision: %f" % precision)
+recall = recall_score(tst,prdt)
+print("Recall: %f" % recall)
+f1 = f1_score(tst,prdt)
+print("F1_score: %f" % f1)
