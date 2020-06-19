@@ -13,7 +13,7 @@ Accuracies obtained are :
 1) CNN 70-30 split : 98.72 %
 2) CNN 10 fold cross validation : 99.32 %
 3) LSTM 70-30 split : 97%
-4) LSTM 10 fold cross validation : 91%
+4) LSTM 10 fold cross validation : 97%
 
 
 
